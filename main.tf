@@ -1,11 +1,14 @@
 terraform {
-  backend "remote" {
-    organization = "zambrana"
+  # It is recommended to use remote state instead of local
+  # You can update these values in order to configure your remote state.
+  /*  backend "remote" {
+    organization = "{{ORGANIZATION_NAME}}"
 
     workspaces {
-      name = "usri-AllVMs"
+      name = "{{WORKSPACE_NAME}}"
     }
   }
+*/
   required_version = ">= 0.12.16"
 }
 
