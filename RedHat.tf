@@ -65,7 +65,7 @@ resource "azurerm_virtual_machine" "redhatVM" {
     runcmd:
       - [ systemctl, enable, httpd.service ]
       - [ systemctl, start, httpd.service ]
-      - [firewall-cmd, --add-service, http]
+      - [ firewall-cmd, --add-service, http ]
     EOF
 
   }
