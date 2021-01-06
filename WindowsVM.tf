@@ -1,60 +1,56 @@
-resource "azurerm_public_ip" "winpublicip" {
-  name                = "${var.suffix}Windows${var.VMName}${var.publicIPName}"
-  location            = azurerm_resource_group.genericRG.location
-  resource_group_name = azurerm_resource_group.genericRG.name
+resource "azurerm_public_ip" "winPublicIP" {
+  name                = "${var.suffix}${var.winVMName}"
+  location            = azurerm_resource_group.mainRG.location
+  resource_group_name = azurerm_resource_group.mainRG.name
   allocation_method   = var.publicIPAllocation
 
   tags = var.tags
 }
 
 resource "azurerm_network_interface" "winNI" {
-  name                      = "${var.suffix}Windows${var.VMName}${var.networkInterfaceName}"
-  location                  = azurerm_resource_group.genericRG.location
-  resource_group_name       = azurerm_resource_group.genericRG.name
-  network_security_group_id = azurerm_network_security_group.genericNSG.id
+  name                = "${var.suffix}${var.winVMName}"
+  location            = azurerm_resource_group.mainRG.location
+  resource_group_name = azurerm_resource_group.mainRG.name
 
   ip_configuration {
-    name                          = "${var.suffix}Windows${var.VMName}IPConf"
-    subnet_id                     = azurerm_subnet.internal.id
+    name                          = "windowsconfiguration"
+    subnet_id                     = azurerm_subnet.dynamicSubnets["main"].id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.winpublicip.id
+    public_ip_address_id          = azurerm_public_ip.winPublicIP.id
   }
 
   tags = var.tags
 }
 
-resource "azurerm_virtual_machine" "winVM" {
-  name                  = "${var.suffix}Windows${var.VMName}"
-  location              = azurerm_resource_group.genericRG.location
-  resource_group_name   = azurerm_resource_group.genericRG.name
-  network_interface_ids = ["${azurerm_network_interface.winNI.id}"]
-  vm_size               = var.vmSize
+resource "azurerm_network_interface_security_group_association" "winSG" {
+  network_interface_id      = azurerm_network_interface.winNI.id
+  network_security_group_id = azurerm_network_security_group.rdpNSG.id
+}
 
-  # Uncomment this line to delete the OS disk automatically when deleting the VM
-  delete_os_disk_on_termination = true
+resource "azurerm_windows_virtual_machine" "winVM" {
+  name                  = "${var.suffix}${var.winVMName}"
+  resource_group_name   = azurerm_resource_group.mainRG.name
+  location              = azurerm_resource_group.mainRG.location
+  size                  = var.vmSize
+  admin_username        = var.vmUserName
+  admin_password        = var.password
+  network_interface_ids = [azurerm_network_interface.winNI.id, ]
 
-  # Uncomment this line to delete the data disks automatically when deleting the VM
-  delete_data_disks_on_termination = true
+  os_disk {
+    name                 = "${var.suffix}${var.winVMName}OSDisk"
+    caching              = "ReadWrite"
+    storage_account_type = var.osDisk
+  }
 
-  storage_image_reference {
+  source_image_reference {
     publisher = "MicrosoftWindowsServer"
     offer     = "WindowsServer"
-    sku       = "2012-R2-Datacenter"
+    sku       = var.windowsSKU
     version   = "latest"
   }
-  storage_os_disk {
-    name              = "${var.suffix}Windows${var.VMName}OSdisk1"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Standard_LRS"
-  }
-  os_profile {
-    computer_name  = "Windows${var.VMName}"
-    admin_username = "demouser"
-    admin_password = var.windowsPassword
-  }
-  os_profile_windows_config {
 
+  boot_diagnostics {
+    storage_account_uri = azurerm_storage_account.mainSA.primary_blob_endpoint
   }
 
   tags = var.tags

@@ -9,14 +9,19 @@ terraform {
     }
   }
 */
-  required_version = ">= 0.12.16"
+  required_version = "= 0.14.3"
+  required_providers {
+    azurerm = "=2.41.0"
+  }
 }
 
 provider "azurerm" {
-  version = "=1.37.0"
+  features {}
 }
-resource "azurerm_resource_group" "genericRG" {
+
+resource "azurerm_resource_group" "mainRG" {
   name     = "${var.suffix}${var.rgName}"
   location = var.location
-  tags     = var.tags
+
+  tags = var.tags
 }

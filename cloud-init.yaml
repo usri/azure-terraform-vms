@@ -1,0 +1,12 @@
+#cloud-config
+package_upgrade: true
+packages:
+  - httpd
+  - java-1.8.0-openjdk-devel
+  - git 
+write_files:
+  - content: <!doctype html><html><body><h1>Hello CentOS 2019 from Azure!</h1></body></html>
+    path: /var/www/html/index.html
+runcmd:
+  - [ systemctl, enable, httpd.service ]
+  - [ systemctl, start, httpd.service ]

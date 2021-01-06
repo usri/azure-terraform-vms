@@ -1,67 +1,86 @@
 # Azure VM Demo
 
-Simple Terraform script that creates most common VM OSs, Windows, RedHat, CentOS and Ubuntu in Azure.
-It creates the following resources:
+This sample repo shows various capabilities of terraform to create dynamic infrastructure using lists, maps, loops and more applied to VMs, Networking and some other resources as well.
 
-* A new Resource Group
-* A Windows VM
-* A CentOs VM
-* A Ubuntu VM
-* A RedHat VM
-* A VNet and 2 subnets
-* A Network Security Group with SSH, HTTP and RDP access.
+It creates:
 
-It should be easy to reuse in order to build other versions or OSs. You can list most common VM Images using this command:
-
-```ssh
-az vm image list -o table
-```
-
-On Linux based VMs it also deploys a web server just to show how you can automate some initial tasks.
-Ubuntu installs nginx and RedHat and CentOS installs Apache Web Server.
+- A new Resource Group.
+- A Windows VM.
+- A CentOs VM.
+- An Ubuntu VM.
+- A RedHat VM.
+- A VNet with multiple subnets that could be defined in multiple ways (lists, maps, etc.).
+- Security Groups.
+- Storage Account.
 
 ## Project Structure
 
 This project has the following files which make them easy to reuse, add or remove.
 
 ```ssh
-.
-├── CentOSVM.tf
 ├── LICENSE
 ├── README.md
-├── RedHat.tf
-├── Ubuntu.tf
-├── WindowsVM.tf
+├── WindowsVMVar.tf
+├── centOSVM.tf
+├── centOSVMvar.tf
+├── cloud-init-jenkins.yaml
+├── cloud-init.yaml
 ├── main.tf
+├── mainVar.tf
 ├── networking.tf
+├── networkingVar.tf
 ├── outputs.tf
+├── redHatVM.tf
+├── redHatVMVar.tf
 ├── security.tf
-└── variables.tf
+├── securityVar.tf
+├── storageVar.tf
+├── storage.tf
+├── ubuntuVM.tf
+├── ubuntuVMVar.tf
+├── vmVar.tf
+└── windowsVM.tf
 ```
-
-Most common paremeters are exposed as variables in _`variables.tf`_
 
 ## Pre-requisites
 
-It is assumed that you have azure CLI and Terraform installed and configured.
-More information on this topic [here](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/terraform-install-configure). I recommend using a Service Principal with a certificate.
+It is assumed that you have azure CLI installed and configured.
+More information on this topic [here](https://docs.microsoft.com/en-us/azure/terraform/terraform-overview). I recommend using a Service Principal with a certificate for authentication specially if you are using this as part of your Ci/CD pipeline.
 
 ### versions
 
-* Terraform =>0.12.16
-* Azure provider 1.37.0
-* Azure CLI 2.0.77
+- Terraform 0.12.7
+- AzureRM provider 1.33.1
+- Azure CLI 2.17.1
 
-## Authentication
+## VM Authentication
 
-For Linux based VMs, Ubuntu, RedHat and CentOS it uses key based authentication and it assumes you already have a key and you can configure the path using the _sshKeyPath_ variable in _`variables.tf`_
-You can create one using this command:
+Linux uses key based authentication and it assumes you already have a key and you can configure the path using the _sshKeyPath_ variable in _`vmVar.tf`_ . You can create one using this command:
 
 ```ssh
 ssh-keygen -t rsa -b 4096 -m PEM -C vm@mydomain.com -f ~/.ssh/vm_ssh
 ```
 
-For Windows VMs it stores the password in the variable _windowsPassword_ in _`variables.tf`_. This is absolutely **not recommended** so as soon you create the VM change the password. In most CI/CD pipelines you join the VM to a Domain and the initial configuration takes care of it.
+and set it using this approach:
+
+```ssh
+export TF_VAR_sshKeyPath=`cat ~/.ssh/vm_ssh.pub`
+```
+
+Linux VMs also show integration with [cloud init](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/using-cloud-init) to customize the VM by installing or making some configurations at provisioning time. You can customize this behavior by modifying these files:
+
+- cloud-init-jenkins.yaml
+- cloud-init.yaml
+
+Windows authentication uses user name and password. It is not recommended setting these values in terraform scripts. You can set them as Environment variables. More information about this approach can be found [here](https://www.terraform.io/docs/configuration/variables.html#environment-variables).
+These variables _vmUserName_ and _password_ that you should set up using this approach and they are also located in _`vmVar.tf`_ :
+
+```ssh
+export TF_VAR_vmUserName={{VMUSER}}
+export TF_VAR_password={{VMPASSWORD}}
+```
+
+Starting with [terraform 0.14](https://www.hashicorp.com/blog/announcing-hashicorp-terraform-0-14-general-availability) you can also set all these credentials as sensitive. More information [here.](https://www.terraform.io/docs/configuration/expressions/references.html#sensitive-resource-attributes)
 
 ## Usage
 
@@ -76,6 +95,7 @@ terraform apply
 ```
 
 I also recommend using a remote state instead of a local one. You can change this configuration in _`main.tf`_
+
 You can create a free Terraform Cloud account [here](https://app.terraform.io).
 
 ## Clean resources
@@ -92,4 +112,4 @@ Be aware that by running this script your account might get billed.
 
 ## Authors
 
-* Marcelo Zambrana
+- Marcelo Zambrana
